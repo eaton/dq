@@ -17,16 +17,13 @@ export async function parseToc(path: string, options: TocOptions = {}) {
   const parser = new Parser({
     async: true,
     explicitArray: false,
-    charkey: 'text',
     normalize: true,
     mergeAttrs: true,
-    // charkey: 'text',
-    // trim: true,
-    // normalize: true,
-    // mergeAttrs: true,
+    trim: true,
   });
-  const parsed = await parser.parseStringPromise(raw);
-  return parsed
+
+  const dom = await parser.parseStringPromise(raw);
+  return schema.parse(dom).ncx.navMap.navPoint;
 }
 
 export async function getRawToc(path: string) {
@@ -37,3 +34,20 @@ export async function getRawToc(path: string) {
     })
     .then(zip => zip.files['OEBPS/toc.ncx']?.async('string'));
 }
+
+const textContent = z.object({ text: z.string() }).transform(o => o.text);
+const srcContent = z.object({ src: z.string() }).transform(o => o.src);
+
+const schema = z.object({
+  ncx: z.object({
+    // docTitle: z.string(),
+    navMap: z.object({
+      navPoint: z.array(z.object({
+        id: z.string(),
+        playOrder: z.coerce.number(),
+        navLabel: textContent,
+        content: srcContent
+      }))
+    })
+  })
+});

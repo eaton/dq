@@ -52,9 +52,11 @@
     "typescript-eslint": "^7.9.0"
   },
   "dependencies": {
+    "@types/turndown": "^5.0.4",
     "fs-jetpack": "^5.1.0",
     "jszip": "^3.10.1",
     "micromatch": "^4.0.7",
+    "turndown": "^7.2.0",
     "utimes": "^5.2.1",
     "xml-query": "^1.5.0",
     "xml-reader": "^2.4.3",

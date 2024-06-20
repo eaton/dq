@@ -38,22 +38,19 @@ export async function getRawMeta(path: string) {
     .then(zip => zip.files['OEBPS/content.opf']?.async('string'));
 }
 
-const contributor = z.object({
-  id: z.string(),
-  text: z.string(),
-}).transform(o => o.text);
+const textContent = z.object({ text: z.string() }).transform(o => o.text);
 
 const schema = z.object({
   package: z.object({
     metadata: z.object({
       title: z.string(),
-      creator: contributor,
-      contributor: z.array(contributor),
+      creator: textContent,
+      contributor: z.array(textContent),
       publisher: z.string(),
       rights: z.string(),
       subject: z.array(z.string()),
       language: z.string(),
-      identifier: contributor,
+      identifier: textContent,
       source: z.string(),
       date: z.string()
     })
