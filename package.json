@@ -1,0 +1,62 @@
+{
+  "name": "@eatonfyi/dq",
+  "version": "1.0.0",
+  "description": "Dancing Queen, the ABA book parser.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.cts",
+  "exports": {
+    "require": {
+      "types": "./dist/index.d.cts",
+      "default": "./dist/index.cjs"
+    },
+    "import": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "/dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "shx rm -rf dist; shx rm -rf .tsimp; pkgroll --minify",
+    "format": "prettier --config prettier.config.js 'src/**/*.ts' --write",
+    "lint": "eslint .",
+    "lint-and-fix": "eslint . --fix",
+    "prepare": "npm run build",
+    "test": "ava"
+  },
+  "author": "eaton",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eaton/cover-me.git"
+  },
+  "devDependencies": {
+    "@eslint/js": "^8.57.0",
+    "@types/jszip": "^3.4.1",
+    "@types/micromatch": "^4.0.7",
+    "@types/node": "^20.11.30",
+    "@types/xml2js": "^0.4.14",
+    "ava": "^6.1.2",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^8.10.0",
+    "pkgroll": "^2.0.2",
+    "prettier": "^3.2.5",
+    "prettier-plugin-organize-imports": "^3.2.4",
+    "shx": "^0.3.4",
+    "tsimp": "^2.0.11",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^7.9.0"
+  },
+  "dependencies": {
+    "fs-jetpack": "^5.1.0",
+    "jszip": "^3.10.1",
+    "micromatch": "^4.0.7",
+    "utimes": "^5.2.1",
+    "xml2js": "^0.6.2",
+    "zod": "^3.23.8"
+  }
+}
