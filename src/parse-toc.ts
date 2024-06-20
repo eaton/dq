@@ -16,6 +16,10 @@ export async function parseToc(path: string, options: TocOptions = {}) {
 
   const parser = new Parser({
     async: true,
+    explicitArray: false,
+    charkey: 'text',
+    normalize: true,
+    mergeAttrs: true,
     // charkey: 'text',
     // trim: true,
     // normalize: true,

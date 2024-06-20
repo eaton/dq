@@ -16,14 +16,17 @@ export async function parseMeta(path: string, options: MetaOptions = {}) {
 
   const parser = new Parser({
     async: true,
-    // charkey: 'text',
-    // trim: true,
-    // normalize: true,
-    // mergeAttrs: true,
+    explicitArray: false,
+    charkey: 'text',
+    normalize: true,
+    mergeAttrs: true,
+    tagNameProcessors: [
+      (name: string) => name.startsWith('dc:') ? name.replace('dc:', '') : name
+    ]
   });
 
-  const parsed = await parser.parseStringPromise(raw);
-  return parsed
+  const dom = await parser.parseStringPromise(raw);
+  return schema.parse(dom).package.metadata;
 }
 
 export async function getRawMeta(path: string) {
@@ -34,3 +37,25 @@ export async function getRawMeta(path: string) {
     })
     .then(zip => zip.files['OEBPS/content.opf']?.async('string'));
 }
+
+const contributor = z.object({
+  id: z.string(),
+  text: z.string(),
+}).transform(o => o.text);
+
+const schema = z.object({
+  package: z.object({
+    metadata: z.object({
+      title: z.string(),
+      creator: contributor,
+      contributor: z.array(contributor),
+      publisher: z.string(),
+      rights: z.string(),
+      subject: z.array(z.string()),
+      language: z.string(),
+      identifier: contributor,
+      source: z.string(),
+      date: z.string()
+    })
+  })
+});
