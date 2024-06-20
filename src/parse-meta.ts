@@ -45,7 +45,7 @@ const schema = z.object({
     metadata: z.object({
       title: z.string(),
       creator: textContent,
-      contributor: z.array(textContent),
+      contributor: z.array(textContent).optional(),
       publisher: z.string(),
       rights: z.string(),
       subject: z.array(z.string()),
