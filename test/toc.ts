@@ -1,10 +1,10 @@
 import test from 'ava';
-import { parseToc } from '../src/parse-toc.js';
+import { getToc } from '../src/get-toc.js';
 
 test('parse cs toc', async t => {
   const file = './test/fixtures/content-strategy.epub';
   
-  const toc = await parseToc(file);
+  const toc = await getToc(file);
   t.not(toc, undefined);
   t.deepEqual(toc[0],   {
     "id": "navpoint1",
@@ -16,7 +16,7 @@ test('parse cs toc', async t => {
 
 test('parse ip toc', async t => {
   const file = './test/fixtures/image-performance.epub';
-  const toc = await parseToc(file);
+  const toc = await getToc(file);
 
   t.not(toc, undefined);
   t.deepEqual(toc[0],   {

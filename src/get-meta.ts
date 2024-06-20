@@ -10,7 +10,7 @@ export interface MetaOptions {
 const defaults: MetaOptions = {
 }
 
-export async function parseMeta(path: string, options: MetaOptions = {}) {
+export async function getMeta(path: string, options: MetaOptions = {}) {
   const opt = { ...defaults, ...options };
   const raw = await getRawMeta(path);
 
@@ -40,19 +40,21 @@ export async function getRawMeta(path: string) {
 
 const textContent = z.string().or(z.object({ text: z.string() }).transform(o => o.text));
 
-const schema = z.object({
-  package: z.object({
-    metadata: z.object({
-      title: z.string(),
-      creator: z.array(textContent).or(textContent).optional(),
-      contributor: z.array(textContent).optional().optional(),
-      publisher: z.string().optional(),
-      rights: z.string().optional(),
-      subject: z.array(z.string()).optional(),
-      language: z.string(),
-      identifier: textContent,
-      source: z.string().optional(),
-      date: z.string()
-    })
-  })
+const metadata = z.object({
+  title: z.string(),
+  creator: z.array(textContent).or(textContent).optional(),
+  contributor: z.array(textContent).optional().optional(),
+  publisher: z.string().optional(),
+  rights: z.string().optional(),
+  subject: z.array(z.string()).optional(),
+  language: z.string(),
+  identifier: textContent,
+  source: z.string().optional(),
+  date: z.string()
 });
+
+const schema = z.object({
+  package: z.object({ metadata })
+});
+
+export type BookMetadata = z.infer<typeof metadata>;

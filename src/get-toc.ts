@@ -10,7 +10,7 @@ export interface TocOptions {
 const defaults: TocOptions = {
 }
 
-export async function parseToc(path: string, options: TocOptions = {}) {
+export async function getToc(path: string, options: TocOptions = {}) {
   const opt = { ...defaults, ...options };
   const raw = await getRawToc(path);
 
@@ -38,16 +38,18 @@ export async function getRawToc(path: string) {
 const textContent = z.string().or(z.object({ text: z.string() }).transform(o => o.text));
 const srcContent = z.string().or(z.object({ src: z.string() }).transform(o => o.src));
 
+const navPoint = z.object({
+  id: z.string(),
+  playOrder: z.coerce.number(),
+  navLabel: textContent,
+  content: srcContent
+});
+
 const schema = z.object({
   ncx: z.object({
     // docTitle: z.string(),
-    navMap: z.object({
-      navPoint: z.array(z.object({
-        id: z.string(),
-        playOrder: z.coerce.number(),
-        navLabel: textContent,
-        content: srcContent
-      }))
-    })
+    navMap: z.object({ navPoint: z.array(navPoint) })
   })
 });
+
+export type BookTocItem = z.infer<typeof navPoint>;

@@ -19,5 +19,7 @@ export async function getCoverColor(path: string) {
       .then(buffer => Jimp.read(buffer))
       .then(image => image.getPixelColor(50, 500))
       .then(hex => Jimp.intToRGBA(hex))
-  };
+  } else {
+    return undefined;
+  }
 }
