@@ -35,8 +35,8 @@ export async function getRawToc(path: string) {
     .then(zip => zip.files['OEBPS/toc.ncx']?.async('string'));
 }
 
-const textContent = z.object({ text: z.string() }).transform(o => o.text);
-const srcContent = z.object({ src: z.string() }).transform(o => o.src);
+const textContent = z.string().or(z.object({ text: z.string() }).transform(o => o.text));
+const srcContent = z.string().or(z.object({ src: z.string() }).transform(o => o.src));
 
 const schema = z.object({
   ncx: z.object({
