@@ -1,6 +1,8 @@
 # Dancing Queen, the ABA Book Parser
 
-Given an EPUB file from A Book Apart, extract the table of contents, files, and other sundries for use in an 11ty site. Imagine you're an ABA author with fresh rights to your book, a desire to set it free like a little web bird, but no idea how to turn it into an attractive web site. Congratulations, you found the right nerds.
+Imagine you're an ABA author with fresh rights to your book, a desire to set it free like a little web bird, but no idea how to turn it into an attractive web site. Congratulations, you found the right nerds.
+
+This library, given an EPUB file from A Book Apart, extracts the table of contents, files, chapters, and other sundries, outputting markdown files and supporting image assets for use in an 11ty site.
 
 The default mode of interaction for this utility is super straightforward, though ideally you'll never actually use it — it's meant to be used as a library with @wilto's ABA-Book-Site-In-A-Box setup. But if you're nerdishly unwell, you can look deeper:
 
