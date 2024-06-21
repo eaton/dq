@@ -17,3 +17,11 @@ test('get ip color', async t => {
   t.not(color, undefined);
   t.deepEqual(color, { a: 255, r: 241, b: 110, g: 109 });
 });
+
+test('get ip in hex', async t => {
+  const file = './test/fixtures/image-performance.epub';
+  const color = await getCoverColor(file, 'hex');
+
+  t.not(color, undefined);
+  t.deepEqual(color, '#f16d6e');
+});

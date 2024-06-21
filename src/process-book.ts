@@ -8,7 +8,7 @@ import { getToc } from './get-toc.js';
 import { getChapter } from './get-chapter.js';
 import { toMarkdown } from './build-markdown.js';
 import { copyFiles } from './copy-files.js';
-import { expandLinks } from './expand-links.js';
+import { expandLinks, LinkStatus } from './expand-links.js';
 
 export interface BookOptions {
   data?: false | string,
@@ -20,7 +20,7 @@ export interface BookOptions {
 
 const defaults: BookOptions = {
   data: './output',
-  images: './output/images',
+  images: './output/image',
   chapters: './output/src',
   fonts: false,
   expandLinks: true,
@@ -32,11 +32,12 @@ export async function processBook(path: string, options: BookOptions = {}) {
 
   if (opt.data) {
     const meta = await getMeta(book);
-    const color = await getCoverColor(book);
+    const color = await getCoverColor(book, 'hex');
     jetpack.dir(opt.data).write('meta.json', { color, ...meta });
   }
 
   if (opt.chapters) {
+    const links: LinkStatus[] = [];
     const toc = await getToc(book);
     for (const chapter of toc) {
       // These are deep links to portions of individual chapters; we 
@@ -50,12 +51,15 @@ export async function processBook(path: string, options: BookOptions = {}) {
         };
 
         if (opt.expandLinks) {
-          frontmatter.links = await expandLinks(xhtml);
+          links.push(...await expandLinks(xhtml));
         }
 
         const content = toMarkdown(xhtml);
         const filename = chapter.content.replace('.xhtml', '.md');
         jetpack.dir(opt.chapters).write(filename, matter.stringify({ content }, frontmatter));
+      }
+      if (opt.data && links.length) {
+        jetpack.dir(opt.data).write('links.json', links);
       }
     }
   }

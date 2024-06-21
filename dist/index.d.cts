@@ -169,7 +169,7 @@ interface BookOptions {
     images?: false | string;
     fonts?: false | string;
     chapters?: false | string;
-    unshortenLinks?: boolean;
+    expandLinks?: boolean;
 }
 declare function processBook(path: string, options?: BookOptions): Promise<void>;
 
