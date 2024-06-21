@@ -6,11 +6,11 @@ import { getMeta } from './get-meta.js';
 import { getCoverColor } from './get-cover-color.js';
 import { getToc } from './get-toc.js';
 import { getChapter } from './get-chapter.js';
-import { toMarkdown } from './build-markdown.js';
 import { copyFiles } from './copy-files.js';
-import { expandLinks, LinkStatus } from './expand-links.js';
+import { LinkStatus } from './expand-links.js';
 
 export interface BookOptions {
+  root?: string,
   data?: false | string,
   images?: false | string,
   fonts?: false | string,
@@ -18,10 +18,11 @@ export interface BookOptions {
   expandLinks?: boolean,
 }
 
-const defaults: BookOptions = {
-  data: './output',
-  images: './output/image',
-  chapters: './output/src',
+const defaults: Required<BookOptions> = {
+  root: './output',
+  data: '_data',
+  images: '_static/image',
+  chapters: '_src',
   fonts: false,
   expandLinks: true,
 }
@@ -29,11 +30,12 @@ const defaults: BookOptions = {
 export async function processBook(path: string, options: BookOptions = {}) {
   const opt = { ...defaults, ...options };
   const book = await loadBook(path);
+  const root = jetpack.dir(opt.root);
 
   if (opt.data) {
     const meta = await getMeta(book);
     const color = await getCoverColor(book, 'hex');
-    jetpack.dir(opt.data).write('meta.json', { color, ...meta });
+    root.dir(opt.data).write('meta.json', { color, ...meta });
   }
 
   if (opt.chapters) {
@@ -43,23 +45,24 @@ export async function processBook(path: string, options: BookOptions = {}) {
       // These are deep links to portions of individual chapters; we 
       // can safely skip them.
       if (chapter.content.indexOf('#') > -1) continue;
-      const xhtml = await getChapter(book, chapter.content);
-      if (xhtml) {
+      const chapterData = await getChapter(book, chapter.content);
+      if (chapterData.xhtml) {
         const frontmatter: Record<string, unknown> = {
           title: chapter.navLabel,
           order: chapter.playOrder,
         };
+        if (chapterData.chapterHeading) frontmatter.chapterHeading = chapterData.chapterHeading;
 
         if (opt.expandLinks) {
-          links.push(...await expandLinks(xhtml));
+          links.push(...chapterData.links?.map(url => ({ url })) ?? []);
         }
 
-        const content = toMarkdown(xhtml);
+        const content = chapterData.markdown ?? '';
         const filename = chapter.content.replace('.xhtml', '.md');
-        jetpack.dir(opt.chapters).write(filename, matter.stringify({ content }, frontmatter));
+        root.dir(opt.chapters).write(filename, matter.stringify({ content }, frontmatter));
       }
       if (opt.data && links.length) {
-        jetpack.dir(opt.data).write('links.json', links);
+        root.dir(opt.data).write('links.json', links);
       }
     }
   }
@@ -69,7 +72,7 @@ export async function processBook(path: string, options: BookOptions = {}) {
       matching: '**/image/*.*',
       preserveDates: true,
       rewritePaths: path => path.replace('OEBPS/image/', ''),
-      output: opt.images
+      output: root.dir(opt.images).path()
     });
   }
 }

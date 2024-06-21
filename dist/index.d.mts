@@ -148,10 +148,22 @@ declare const navPoint: z.ZodObject<{
 }>;
 type BookTocItem = z.infer<typeof navPoint>;
 
+type ChapterData = {
+    [index: string]: unknown;
+    title?: string;
+    chapterHeading?: string;
+    markdown?: string;
+    xhtml?: string;
+    links?: string[];
+};
 /**
  * Given the `content` key from a TOC chapter entry, return the XHTML text of that chapter.
  */
-declare function getChapter(input: string | JSZip, chapter: string): Promise<string | undefined>;
+declare function getChapter(input: string | JSZip, chapter: string): Promise<ChapterData>;
+/**
+ * Given the `content` key from a TOC chapter entry, return the XHTML text of that chapter.
+ */
+declare function getRawChapter(input: string | JSZip, chapter: string): Promise<string | undefined>;
 
 interface CopyFileOptions {
     matching?: string | string[];
@@ -165,6 +177,7 @@ interface CopyFileOptions {
 declare function copyFiles(input: string | JSZip, options?: CopyFileOptions): Promise<void>;
 
 interface BookOptions {
+    root?: string;
     data?: false | string;
     images?: false | string;
     fonts?: false | string;
@@ -173,4 +186,4 @@ interface BookOptions {
 }
 declare function processBook(path: string, options?: BookOptions): Promise<void>;
 
-export { type BookMetadata, type BookOptions, type BookTocItem, type CopyFileOptions, copyFiles, getChapter, getMeta, getRawMeta, getRawToc, getToc, listContents, loadBook, processBook };
+export { type BookMetadata, type BookOptions, type BookTocItem, type ChapterData, type CopyFileOptions, copyFiles, getChapter, getMeta, getRawChapter, getRawMeta, getRawToc, getToc, listContents, loadBook, processBook };
