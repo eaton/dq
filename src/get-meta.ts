@@ -19,7 +19,13 @@ export async function getMeta(input: string | JSZip) {
   });
 
   const dom = await parser.parseStringPromise(raw);
-  return schema.parse(dom).package.metadata;
+  const parsed = schema.safeParse(dom);
+  if (parsed.success) {
+    return parsed.data.package.metadata;
+  } else {
+    console.log(JSON.stringify(dom, undefined, 2));
+    throw parsed.error;
+  }
 }
 
 export async function getRawMeta(input: string | JSZip) {
@@ -30,13 +36,13 @@ export async function getRawMeta(input: string | JSZip) {
 const textContent = z.string().or(z.object({ text: z.string() }).transform(o => o.text));
 
 const metadata = z.object({
-  title: z.string(),
+  title: textContent.optional(),
   creator: z.array(textContent).or(textContent).optional(),
   contributor: z.array(textContent).optional().optional(),
   publisher: z.string().optional(),
   rights: z.string().optional(),
-  subject: z.array(z.string()).optional(),
-  language: z.string(),
+  subject: z.string().or(z.array(z.string())).optional(),
+  language: textContent.or(z.array(textContent)).optional(),
   identifier: textContent,
   source: z.string().optional(),
   date: z.string()

@@ -1,5 +1,9 @@
 import { processBook } from "./process-book.js";
+import jetpack from "fs-jetpack";
+import { parse as parsePath } from 'path'
 
-await processBook('./test/fixtures/content-strategy.epub', { root: './output/strategy'});
-await processBook('./test/fixtures/going-responsive.epub', { root: './output/responsive'});
-await processBook('./test/fixtures/image-performance.epub', { root: './output/images'});
+for (const f of jetpack.find({ matching: './input/*.epub' })) {
+  console.log(`Processing '${f}'`);
+  await processBook(f, { root: `./output/${parsePath(f).name}` })
+    .catch(() => console.log(`Error processing ${f}`));
+}

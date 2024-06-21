@@ -17,7 +17,13 @@ export async function getToc(input: string | JSZip) {
   });
 
   const dom = await parser.parseStringPromise(raw);
-  return schema.parse(dom).ncx.navMap.navPoint;
+  const parsed = schema.safeParse(dom);
+  if (parsed.success) {
+    return parsed.data.ncx.navMap.navPoint;
+  } else {
+    console.log(JSON.stringify(dom, undefined, 2));
+    throw parsed.error;
+  }
 }
 
 export async function getRawToc(input: string | JSZip) {
