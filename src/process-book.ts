@@ -10,13 +10,73 @@ import { copyFiles } from './copy-files.js';
 import { listContents } from './list-contents.js';
 import { LinkStatus } from './expand-links.js';
 
+/**
+ * Options to control Dancing Queen's book conversion process.
+ */
 export interface BookOptions {
+  
+  /**
+   * The root directory the book's files should be exported to.
+   *
+   * @defaultValue `./output`
+   */
   root?: string,
+
+  /**
+   * The root-relative directory where data files (book metadata, link
+   * status checks, etc) should go.
+   * 
+   * If set to `false`, these metadata files will not be generated.
+   *
+   * @defaultValue `_data`
+   */
   data?: false | string,
-  images?: false | string,
-  fonts?: false | string,
+
+  /**
+   * The root-relative directory where html chapter/section files should
+   * be copied.
+   * 
+   * If set to `false`, these files will not be copied over.
+   *
+   * @defaultValue `_src`
+   */
   chapters?: false | string,
-  expandLinks?: boolean,
+
+  /**
+   * The root-relative directory where image files for the ebook should
+   * be copied.
+   * 
+   * If set to `false`, these files will not be copied over.
+   *
+   * @defaultValue `_src/image`
+   */
+  images?: false | string,
+
+  /**
+   * Convert the chapter/section files to markdown and store their metadata
+   * in the file's frontmatter.
+   *
+   * @defaultValue `true`
+   */
+  convertToMarkdown?: boolean,
+
+  /**
+   * Attempt to replace shortened `bookapt.com` links with their expanded
+   * equivalents.
+   * 
+   * Note: This feature is not yet complete.
+   *
+   * @defaultValue `true`
+   */
+  resolveLinks?: boolean,
+  
+  /**
+   * Attempt to rename the chapter/section files to follow their order in the
+   * table of contents. 
+   *
+   * @defaultValue `true`
+   */
+  renameChapterFiles?: boolean,
 }
 
 const defaults: Required<BookOptions> = {
@@ -24,8 +84,9 @@ const defaults: Required<BookOptions> = {
   data: '_data',
   images: '_static/image',
   chapters: '_src',
-  fonts: false,
-  expandLinks: true,
+  resolveLinks: true,
+  renameChapterFiles: true,
+  convertToMarkdown: true
 }
 
 export async function processBook(path: string, options: BookOptions = {}) {
@@ -42,26 +103,30 @@ export async function processBook(path: string, options: BookOptions = {}) {
   }
 
   if (opt.chapters) {
+
     const links: LinkStatus[] = [];
     const toc = await getToc(book);
     for (const chapter of toc) {
+      const exportedChapters: string[] = [];
       // These are deep links to portions of individual chapters; we 
       // can safely skip them.
-      if (chapter.content.indexOf('#') > -1) continue;
-      const chapterData = await getChapter(book, chapter.content);
-      if (chapterData.xhtml) {
+      const chapterFile = chapter.content.split('#')[0];
+      if (exportedChapters.includes(chapterFile)) continue;
+
+      const chapterData = await getChapter(book, chapterFile);
+      if (chapterData.markup) {
         const frontmatter: Record<string, unknown> = {
           title: chapter.navLabel,
           order: chapter.playOrder,
         };
         if (chapterData.chapterHeading) frontmatter.chapterHeading = chapterData.chapterHeading;
 
-        if (opt.expandLinks) {
+        if (opt.resolveLinks) {
           links.push(...chapterData.links?.map(url => ({ url })) ?? []);
         }
 
         const content = chapterData.markdown ?? '';
-        const filename = chapter.content.replace('.xhtml', '.md');
+        const filename = chapterFile.replace(/\..?html/, '.md');
         root.dir(opt.chapters).write(filename, matter.stringify({ content }, frontmatter));
       }
       if (opt.data && links.length) {

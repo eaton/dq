@@ -8,7 +8,7 @@ export type ChapterData = {
   title?: string,
   chapterHeading?: string,
   markdown?: string,
-  xhtml?: string,
+  markup?: string,
   links?: string[],
 }
 
@@ -19,7 +19,7 @@ export async function getChapter(input: string | JSZip, chapter: string) {
   const output: ChapterData = {};
   const xhtml = await getRawChapter(input, chapter);
   if (xhtml) {
-    output.xhtml = xhtml;
+    output.markup = xhtml;
     const $ = cheerio.load(xhtml);
 
     const title = $('title');
