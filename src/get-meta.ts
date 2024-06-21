@@ -1,18 +1,11 @@
 import JSZip from 'jszip';
-import jetpack from 'fs-jetpack';
 import xml2js from 'xml2js';
 const Parser = xml2js.Parser;
 import { z } from 'zod';
+import { loadBook } from './load-book.js';
 
-export interface MetaOptions {
-}
-
-const defaults: MetaOptions = {
-}
-
-export async function getMeta(path: string, options: MetaOptions = {}) {
-  const opt = { ...defaults, ...options };
-  const raw = await getRawMeta(path);
+export async function getMeta(input: string | JSZip) {
+  const raw = await getRawMeta(input);
 
   const parser = new Parser({
     async: true,
@@ -29,12 +22,8 @@ export async function getMeta(path: string, options: MetaOptions = {}) {
   return schema.parse(dom).package.metadata;
 }
 
-export async function getRawMeta(path: string) {
-  return await jetpack.readAsync(path, 'buffer')
-    .then(buffer => {
-      if (buffer) return JSZip.loadAsync(buffer);
-      throw new Error('EBook file could not be read');
-    })
+export async function getRawMeta(input: string | JSZip) {
+  return await loadBook(input)
     .then(zip => zip.files['OEBPS/content.opf']?.async('string'));
 }
 

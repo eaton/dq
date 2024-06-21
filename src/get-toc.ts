@@ -1,18 +1,12 @@
 import JSZip from 'jszip';
-import jetpack from 'fs-jetpack';
 import xml2js from 'xml2js';
 const Parser = xml2js.Parser;
 import { z } from 'zod';
+import { loadBook } from './load-book.js';
 
-export interface TocOptions {
-};
 
-const defaults: TocOptions = {
-}
-
-export async function getToc(path: string, options: TocOptions = {}) {
-  const opt = { ...defaults, ...options };
-  const raw = await getRawToc(path);
+export async function getToc(input: string | JSZip) {
+  const raw = await getRawToc(input);
 
   const parser = new Parser({
     async: true,
@@ -26,13 +20,9 @@ export async function getToc(path: string, options: TocOptions = {}) {
   return schema.parse(dom).ncx.navMap.navPoint;
 }
 
-export async function getRawToc(path: string) {
-  return await jetpack.readAsync(path, 'buffer')
-    .then(buffer => {
-      if (buffer) return JSZip.loadAsync(buffer);
-      throw new Error('EBook file could not be read');
-    })
-    .then(zip => zip.files['OEBPS/toc.ncx']?.async('string'));
+export async function getRawToc(input: string | JSZip) {
+  return await loadBook(input)
+      .then(zip => zip.files['OEBPS/toc.ncx']?.async('string'));
 }
 
 const textContent = z.string().or(z.object({ text: z.string() }).transform(o => o.text));

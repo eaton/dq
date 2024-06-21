@@ -1,14 +1,10 @@
 import JSZip from 'jszip';
-import jetpack from 'fs-jetpack';
+import { loadBook } from './load-book.js';
 
 /**
  * Returns a list of all the EPUB's internal files.
  */
-export async function listContents(path: string) {
-  return await jetpack.readAsync(path, 'buffer')
-    .then(buffer => {
-      if (buffer) return JSZip.loadAsync(buffer);
-      throw new Error('EBook file could not be read');
-    })
-    .then(zip => Object.keys(zip.files));
+export async function listContents(input: string | JSZip) {
+  return await loadBook(input)
+    .then(book => Object.keys(book.files));
 }

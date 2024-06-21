@@ -1,24 +1,20 @@
+import JSZip from 'jszip';
 import { z } from 'zod';
 
-interface CopyFileOptions {
-    matching?: string | string[];
-    output?: string;
-    preserveDates?: boolean;
-    preservePath?: boolean;
-}
 /**
- * Copies matching items from the EPUB to real honest-to-god files.
+ * Ensures a given input is either a functioning Zip file, or a path
+ * where a zip file lives.
+ *
+ * Returns a Promise for a loaded zip file.
  */
-declare function copyFiles(path: string, options?: CopyFileOptions): Promise<void>;
+declare function loadBook(input: string | JSZip): Promise<JSZip>;
 
 /**
  * Returns a list of all the EPUB's internal files.
  */
-declare function listContents(path: string): Promise<string[]>;
+declare function listContents(input: string | JSZip): Promise<string[]>;
 
-interface MetaOptions {
-}
-declare function getMeta(path: string, options?: MetaOptions): Promise<{
+declare function getMeta(input: string | JSZip): Promise<{
     date: string;
     title: string;
     language: string;
@@ -30,7 +26,7 @@ declare function getMeta(path: string, options?: MetaOptions): Promise<{
     subject?: string[] | undefined;
     source?: string | undefined;
 }>;
-declare function getRawMeta(path: string): Promise<string>;
+declare function getRawMeta(input: string | JSZip): Promise<string>;
 declare const metadata: z.ZodObject<{
     title: z.ZodString;
     creator: z.ZodOptional<z.ZodUnion<[z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodEffects<z.ZodObject<{
@@ -107,15 +103,13 @@ declare const metadata: z.ZodObject<{
 }>;
 type BookMetadata = z.infer<typeof metadata>;
 
-interface TocOptions {
-}
-declare function getToc(path: string, options?: TocOptions): Promise<{
+declare function getToc(input: string | JSZip): Promise<{
     id: string;
     playOrder: number;
     navLabel: string;
     content: string;
 }[]>;
-declare function getRawToc(path: string): Promise<string>;
+declare function getRawToc(input: string | JSZip): Promise<string>;
 declare const navPoint: z.ZodObject<{
     id: z.ZodString;
     playOrder: z.ZodNumber;
@@ -154,4 +148,29 @@ declare const navPoint: z.ZodObject<{
 }>;
 type BookTocItem = z.infer<typeof navPoint>;
 
-export { type BookMetadata, type BookTocItem, type CopyFileOptions, type MetaOptions, type TocOptions, copyFiles, getMeta, getRawMeta, getRawToc, getToc, listContents };
+/**
+ * Given the `content` key from a TOC chapter entry, return the XHTML text of that chapter.
+ */
+declare function getChapter(input: string | JSZip, chapter: string): Promise<string | undefined>;
+
+interface CopyFileOptions {
+    matching?: string | string[];
+    output?: string;
+    preserveDates?: boolean;
+    rewritePaths?: (path: string) => string;
+}
+/**
+ * Copies matching items from the EPUB to real honest-to-god files.
+ */
+declare function copyFiles(input: string | JSZip, options?: CopyFileOptions): Promise<void>;
+
+interface BookOptions {
+    data?: false | string;
+    images?: false | string;
+    fonts?: false | string;
+    chapters?: false | string;
+    unshortenLinks?: boolean;
+}
+declare function processBook(path: string, options?: BookOptions): Promise<void>;
+
+export { type BookMetadata, type BookOptions, type BookTocItem, type CopyFileOptions, copyFiles, getChapter, getMeta, getRawMeta, getRawToc, getToc, listContents, loadBook, processBook };

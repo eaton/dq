@@ -1,5 +1,6 @@
 import test from 'ava';
 import jetpack from 'fs-jetpack';
+import { parse as parsePath } from 'path';
 import { CopyFileOptions, copyFiles } from '../src/copy-files.js';
 
 test('copy files from ebook', async t => {
@@ -9,7 +10,6 @@ test('copy files from ebook', async t => {
   const options: CopyFileOptions = {
     output: output.path(),
     preserveDates: false,
-    preservePath: false,
     matching: '**/*.jpg'
   };
 
@@ -27,7 +27,6 @@ test('copy with path', async t => {
   const options: CopyFileOptions = {
     output: output.path(),
     preserveDates: false,
-    preservePath: true,
     matching: 'OEBPS/toc.ncx'
   };
 
@@ -37,14 +36,14 @@ test('copy with path', async t => {
   output.remove();
 });
 
-test('copy with date', async t => {
+test('copy flattened with date', async t => {
   const file = './test/fixtures/content-strategy.epub';
   const output = jetpack.dir('./test/fixtures/copy-with-date');
 
   const options: CopyFileOptions = {
     output: output.path(),
     preserveDates: true,
-    preservePath: false,
+    rewritePaths: input => parsePath(input).base,
     matching: 'OEBPS/toc.ncx'
   };
 

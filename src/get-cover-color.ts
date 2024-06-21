@@ -1,16 +1,12 @@
 import JSZip from 'jszip';
-import jetpack from 'fs-jetpack';
 import Jimp from 'jimp';
+import { loadBook } from './load-book.js';
 
 /**
  * Parses the cover image to find the primary color. Mein gott.
  */
-export async function getCoverColor(path: string) {
-  const zip = await jetpack.readAsync(path, 'buffer')
-    .then(buffer => {
-      if (buffer) return JSZip.loadAsync(buffer);
-      throw new Error('EBook file could not be read');
-    });
+export async function getCoverColor(input: string | JSZip | JSZip) {
+  const zip = await loadBook(input);
   
   // So bad. My god. this is so bad.
   if (zip.files['OEBPS/image/cover.jpg'] !== undefined) {

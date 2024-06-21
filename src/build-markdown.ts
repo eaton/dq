@@ -1,7 +1,4 @@
 import TurndownService, { type Options as TurndownOptions } from 'turndown';
-import matter from 'gray-matter';
-
-import { BookTocItem } from './get-toc.js';
 
 export interface MarkdownOptions extends TurndownService.Options {
   highlightedCodeBlock?: boolean,
@@ -9,33 +6,32 @@ export interface MarkdownOptions extends TurndownService.Options {
   tables?: boolean,
 };
 
-export function buildMarkdownFile(xhtml: string, toc?: BookTocItem) {
-  const service = xhtmlToMarkdownService();
-
-  const data: Record<string, unknown> = {
-    title: toc?.navLabel,
-    order: toc?.playOrder
-  };
-  const content = service.turndown(xhtml);
-  return { data, content };
+const defaults: MarkdownOptions = {
+  hr: '---',
+  emDelimiter: '*',
+  headingStyle: 'atx',
+  bulletListMarker: '*',
+  codeBlockStyle: 'fenced',
 }
 
-export function serializeFrontmatter(data: Record<string, unknown>, content: string) {
-  return matter.stringify({ content }, data);
+export function toMarkdown(xhtml: string, options: MarkdownOptions = {}) {
+  const parser = toMarkdownParser(options);
+  return parser.turndown(xhtml);
 }
-export function xhtmlToMarkdownService(options: MarkdownOptions = {}) {
+
+export function toMarkdownParser(options: MarkdownOptions = {}) {
   const opt: TurndownOptions = {
-    hr: '---',
-    emDelimiter: '*',
-    headingStyle: 'atx',
-    bulletListMarker: '*',
-    codeBlockStyle: 'fenced',
+    ...defaults,
     blankReplacement: (content, node) => node.isBlock && !node.matches("figure") ? "\n\n" : node.outerHTML,
     ...options
   };
 
   const service = new TurndownService(opt);
 
+  // Strip the page title; we don't want it appearing in the body.
+  service.remove('title');
+
+  // List items should get a single space intentation, not four.
   service.addRule('listItem', {
     filter: 'li',
     replacement: (content, node, opt) => {
@@ -56,18 +52,15 @@ export function xhtmlToMarkdownService(options: MarkdownOptions = {}) {
     }
   });
 
+  // ABA images are figures with captions; convert them to alt / src / title combos
+  // that can be processed later.
   service.addRule('aba-figure', {
     filter: 'figure',
-    replacement: function (content, node, opt) {
+    replacement: function (content, node) {
       const img = node.firstChild.firstChild.firstChild;
       const src = img.getAttribute('src');
       const alt = img.getAttribute('alt');
       const caption = node.firstChild.children[1].textContent;
-
-      // const image = node.children.find(n => n.nodeName === 'IMG');
-      // const src = image.getAttribute('src');
-      // const alt = image.getAttribute('alt');
-      // const caption = node.children.find(n => n.nodeName === 'P');
       return `![${alt}](${src} "${caption}")`;
     }
   })
