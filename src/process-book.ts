@@ -21,8 +21,8 @@ export interface BookOptions {
 const defaults: Required<BookOptions> = {
   root: './output',
   data: '_data',
-  images: '_static/image',
   chapters: '_src',
+  images: '_src/image',
   fonts: false,
   expandLinks: true,
 }
