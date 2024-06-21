@@ -22,7 +22,15 @@ export function toMarkdown(xhtml: string, options: MarkdownOptions = {}) {
 export function toMarkdownParser(options: MarkdownOptions = {}) {
   const opt: TurndownOptions = {
     ...defaults,
-    blankReplacement: (content, node) => node.isBlock && !node.matches("figure") ? "\n\n" : node.outerHTML,
+    blankReplacement: (content, node) => {
+      if (node.isBlock && !node.matches("figure")) {
+        return "\n\n";
+      } else if (!node.isBlock && !node.children?.length && node.textContent.trim() === '') {
+        return "";
+      } else {
+        return node.outerHTML;
+      }
+    },
     ...options
   };
 
@@ -67,9 +75,9 @@ export function toMarkdownParser(options: MarkdownOptions = {}) {
       const img = node.firstChild?.firstChild?.firstChild;
       const src = img?.getAttribute && img?.getAttribute('src');
       const alt = img?.getAttribute && img?.getAttribute('alt');
-      const caption = node?.children[1]?.textContent;
+      const caption = node.textContent;
       if (src && caption) {
-        return `![${alt}](${src} "${caption}")`;
+        return `![${alt}](${src} "${caption}")\n\n`;
       } else {
         return node.outerHTML;
       }
@@ -148,13 +156,24 @@ export function toMarkdownParser(options: MarkdownOptions = {}) {
     }
   });
 
-
   service.addRule('nobreak spans', {
-    filter: 'span',
-    replacement: function (content) {
-      return content;
-    }
+    filter: function (node) {
+      return (
+        (node.nodeName === 'SPAN') &&
+        (node.getAttribute('class') === 'NoBreak')
+      )
+    },
+    replacement: (content) => content.trim(),
   })
+
+  service.addRule('cite', {
+    filter: 'cite',
+    replacement: function (content) {
+      return '*' + content + '*';
+    }
+  });
+
+  service.remove(node => (node.nodeName === 'SPAN') && (node.textContent === ' '));
 
   return service;
 }
