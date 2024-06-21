@@ -7,6 +7,7 @@ import { getCoverColor } from './get-cover-color.js';
 import { getToc } from './get-toc.js';
 import { getChapter } from './get-chapter.js';
 import { copyFiles } from './copy-files.js';
+import { listContents } from './list-contents.js';
 import { LinkStatus } from './expand-links.js';
 
 export interface BookOptions {
@@ -36,6 +37,8 @@ export async function processBook(path: string, options: BookOptions = {}) {
     const meta = await getMeta(book);
     const color = await getCoverColor(book, 'hex');
     root.dir(opt.data).write('meta.json', { color, ...meta });
+    root.dir(opt.data).write('files.json', await listContents(book));
+    root.dir(opt.data).write('toc.json', await getToc(book))
   }
 
   if (opt.chapters) {
