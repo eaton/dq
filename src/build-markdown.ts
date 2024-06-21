@@ -22,6 +22,7 @@ export function toMarkdown(xhtml: string, options: MarkdownOptions = {}) {
 export function toMarkdownParser(options: MarkdownOptions = {}) {
   const opt: TurndownOptions = {
     ...defaults,
+
     blankReplacement: (content, node) => {
       if (node.isBlock && !node.matches("figure")) {
         return "\n\n";
