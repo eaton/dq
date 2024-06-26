@@ -182,7 +182,8 @@ type ChapterData = {
     [index: string]: unknown;
     title?: string;
     order?: number;
-    headerImage?: string;
+    heading?: string;
+    chapterImage?: string;
     markdown?: string;
     markup?: string;
     links?: string[];

@@ -78,7 +78,9 @@ export function toMarkdownParser(options: MarkdownOptions = {}) {
       const alt = img?.getAttribute && img?.getAttribute('alt');
       const caption = node.textContent;
       if (src && caption) {
-        return `![${alt}](${src} "${caption}")\n\n`;
+        return `![${alt || ''}](${src} "${caption}")\n\n`;
+      } else if (caption && !src) {
+        return `![${alt || ''}](image/missing-image.png "${caption}")\n\n`;
       } else {
         return node.outerHTML;
       }
@@ -104,7 +106,7 @@ export function toMarkdownParser(options: MarkdownOptions = {}) {
       const alt = img?.getAttribute && img?.getAttribute('alt');
       const caption = node.firstChild.children[1]?.textContent;
       if (src && caption) {
-        return `![${alt}](${src} "${caption}")`;
+        return `![${alt || ''}](${src} "${caption}")`;
       } else {
         return node.outerHTML;
       }
@@ -132,16 +134,40 @@ export function toMarkdownParser(options: MarkdownOptions = {}) {
       const alt = img?.getAttribute && img?.getAttribute('alt');
       const caption = node.children[1]?.textContent;
       if (src && caption) {
-        return `![${alt}](${src} "${caption}")`;
+        return `![${alt || ''}](${src} "${caption}")`;
       } else {
         return node.outerHTML;
       }
     }
   });
 
-  // div.figure
+  // figure.figFrame
   //   div.figure img
-  //   div.figure p.FigureCaptionBorder
+  //   figcaption
+  service.addRule('aba-figure-4', {
+    filter: function (node) {
+      const classAttr = node.getAttribute('class')
+      return (
+        (node.nodeName === 'FIGURE') &&
+        (classAttr && classAttr.indexOf('figFrame') !== -1)
+      )
+    },
+    replacement: function (content, node) {
+      const img = node.firstChild?.firstChild;
+      const src = img?.getAttribute && img?.getAttribute('src');
+      const alt = img?.getAttribute && img?.getAttribute('alt');
+      const caption = node.textContent;
+      if (src && caption) {
+        return `![${alt || ''}](${src} "${caption}")\n\n`;
+      } else if (caption && !src) {
+        return `![${alt || ''}](image/missing-image.png "${caption}")\n\n`;
+      } else {
+        return node.outerHTML;
+      }
+    }
+  })
+
+
   service.addRule('aba-pre-code', {
     // hahah. get it? precode?
 

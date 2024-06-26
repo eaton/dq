@@ -100,7 +100,7 @@ const defaults: Required<BookOptions> = {
   chapters: '_src',
   useToc: true,
   chapterPattern: '**/*.*html',
-  assetPattern: '**/image/*.*',
+  assetPattern: '**/image*/*.*',
   convertToMarkdown: true,
   resolveLinks: true,
 }
@@ -128,13 +128,26 @@ export async function processBook(path: string, options: BookOptions = {}) {
     chapters = chapters.map(c => c.split('#')[0]);
     chapters = [...(new Set(chapters)).values()];
     
+    let chNum = 0;
     for (const chapter of chapters) {
       const chapterData = await getChapter(book, chapter);
       if (chapterData.markup) {
         const frontmatter: Record<string, unknown> = {};
-        if (chapterData.title) frontmatter.title = chapterData.title;
-        if (chapterData.order) frontmatter.order = chapterData.order;
-        if (chapterData.headerImage) frontmatter.headerImage = chapterData.headerImage;
+        if (chapterData.title) {
+          // Pull out the words 'Chapter x.' at the beginning of the title
+          frontmatter.title = chapterData.title.replace(/Chapter \d+\.\s*/, '');
+        }
+        if (chapterData.chapterImage) {
+          frontmatter.headerImage = chapterData.chapterImage;
+          frontmatter.chapterNumber = ++chNum;
+        }
+
+        // Fill in frontmatter gaps with the TOC data
+        const tocEntry = toc.find(e => e.content === chapter);
+        if (tocEntry) {
+           if (tocEntry.playOrder) frontmatter.tocOrder = tocEntry.playOrder;
+         if (tocEntry.navLabel) frontmatter.title ??= tocEntry.navLabel;
+        }
 
         const content = chapterData.markdown ?? '';
         const filename = chapter.replace(/\..?html/, '.md');

@@ -7,7 +7,7 @@ export type ChapterData = {
   [index: string]: unknown;
   title?: string,
   order?: number,
-  headerImage?: string,
+  chapterImage?: string,
   markdown?: string,
   markup?: string,
   links?: string[],
@@ -24,20 +24,24 @@ export async function getChapter(input: string | JSZip, file: string) {
     const $ = cheerio.load(markup);
 
     const title = $('title').text();
+    // Often the title tag is just the name of the file. Don't bother including
+    // it in the frontmatter if that's the case.
     if (title && !file.startsWith(title)) {
       output.title = title;
-    } else {
-      const h1 = $('h1').text();
-      if (h1) {
-        output.title = h1;
-        $('h1').remove();
-      }
+    }
+    
+    // The h1 tag, though, we care about that.
+    const h1 = $('h1').text();
+    if (h1) {
+      // If the title is already set, don't over-write it.
+      output.title ??= h1;
+      $('h1').remove();
     }
 
-    const heading = $('div.chapterheading img, div.ch_open_img img');
-    if (heading) {
-      output.headerImage = heading?.attr('src') || undefined;
-      $(heading).remove();
+    const img = $('div.chapterheading img, div.ch_open_img img');
+    if (img) {
+      output.chapterImage = img?.attr('src') || undefined;
+      $(img).remove();
     }
     
     output.links ??= [];
