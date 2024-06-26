@@ -1,4 +1,5 @@
 import TurndownService, { type Options as TurndownOptions } from 'turndown';
+import { tables } from './turndown-tables.js';
 
 export interface MarkdownOptions extends TurndownService.Options {
   highlightedCodeBlock?: boolean,
@@ -26,7 +27,7 @@ export function toMarkdownParser(options: MarkdownOptions = {}) {
     blankReplacement: (content, node) => {
       if (node.isBlock && !node.matches("figure")) {
         return "\n\n";
-      } else if (!node.isBlock && !node.children?.length && node.textContent.trim() === '') {
+      } else if (!node.isBlock && !node.children?.length && node.textContent?.trim() === '') {
         return "";
       } else {
         return node.outerHTML;
@@ -35,7 +36,7 @@ export function toMarkdownParser(options: MarkdownOptions = {}) {
     ...options
   };
 
-  const service = new TurndownService(opt);
+  const service = new TurndownService(opt).use([tables]);
 
   // Strip the page title; we don't want it appearing in the body.
   service.remove('title');
@@ -50,7 +51,7 @@ export function toMarkdownParser(options: MarkdownOptions = {}) {
       .replace(/\n/gm, '\n    ') // indent
       let prefix = opt.bulletListMarker + ' '
       const parent = node.parentNode
-      if (parent.nodeName === 'OL') {
+      if (parent?.nodeName === 'OL') {
         const start = parent.getAttribute('start')
         const index = Array.prototype.indexOf.call(parent.children, node)
         prefix = (start ? Number(start) + index : index + 1) + '. '
