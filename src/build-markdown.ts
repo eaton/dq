@@ -1,5 +1,5 @@
 import TurndownService, { type Options as TurndownOptions } from 'turndown';
-import { tables } from './turndown-tables.js';
+import { tables } from './better-turndown-tables.js';
 
 export interface MarkdownOptions extends TurndownService.Options {
   highlightedCodeBlock?: boolean,
