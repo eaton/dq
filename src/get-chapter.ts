@@ -6,7 +6,8 @@ import * as cheerio from 'cheerio';
 export type ChapterData = {
   [index: string]: unknown;
   title?: string,
-  chapterHeading?: string,
+  order?: number,
+  headerImage?: string,
   markdown?: string,
   markup?: string,
   links?: string[],
@@ -15,23 +16,28 @@ export type ChapterData = {
 /**
  * Given the `content` key from a TOC chapter entry, return the XHTML text of that chapter.
  */
-export async function getChapter(input: string | JSZip, chapter: string) {
+export async function getChapter(input: string | JSZip, file: string) {
   const output: ChapterData = {};
-  const xhtml = await getRawChapter(input, chapter);
-  if (xhtml) {
-    output.markup = xhtml;
-    const $ = cheerio.load(xhtml);
+  const markup = await getRawChapter(input, file);
+  if (markup) {
+    output.markup = markup;
+    const $ = cheerio.load(markup);
 
-    const title = $('title');
-    if (title) {
-      output.title = title?.text() || undefined;
-      $(title).remove();
+    const title = $('title').text();
+    if (title && !file.startsWith(title)) {
+      output.title = title;
+    } else {
+      const h1 = $('h1').text();
+      if (h1) {
+        output.title = h1;
+        $('h1').remove();
+      }
     }
 
-    const chapterHeading = $('div.chapterheading img');
-    if (chapterHeading) {
-      output.chapterHeading = chapterHeading?.attr('src') || undefined;
-      $(chapterHeading).remove();
+    const heading = $('div.chapterheading img, div.ch_open_img img');
+    if (heading) {
+      output.headerImage = heading?.attr('src') || undefined;
+      $(heading).remove();
     }
     
     output.links ??= [];

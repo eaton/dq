@@ -16,7 +16,7 @@ const defaults: MarkdownOptions = {
 
 export function toMarkdown(xhtml: string, options: MarkdownOptions = {}) {
   const parser = toMarkdownParser(options);
-  return parser.turndown(xhtml);
+  return parser.turndown(xhtml).trim();
 }
 
 export function toMarkdownParser(options: MarkdownOptions = {}) {

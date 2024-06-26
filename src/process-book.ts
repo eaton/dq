@@ -8,7 +8,7 @@ import { getToc } from './get-toc.js';
 import { getChapter } from './get-chapter.js';
 import { copyFiles } from './copy-files.js';
 import { listContents } from './list-contents.js';
-import { LinkStatus } from './expand-links.js';
+import micromatch from 'micromatch';
 
 /**
  * Options to control Dancing Queen's book conversion process.
@@ -71,12 +71,26 @@ export interface BookOptions {
   resolveLinks?: boolean,
   
   /**
-   * Attempt to rename the chapter/section files to follow their order in the
-   * table of contents. 
+   * Process chapter/section files even if they are not linked in the book's TOC file. 
    *
    * @defaultValue `true`
    */
-  renameChapterFiles?: boolean,
+  useToc?: boolean,
+
+  /**
+   * The glob pattern used to identify chapter files in the book's contents. If `includeUnlinkedChapters`
+   * is set to `false`, this option is ignored.
+   *
+   * @defaultValue `**\/*.*html`
+   */
+  chapterPattern?: string
+
+  /**
+   * The glob pattern used to identify image and other media assets in the book's contents.
+   *
+   * @defaultValue `**\/image/*.*`
+   */
+  assetPattern?: string
 }
 
 const defaults: Required<BookOptions> = {
@@ -84,9 +98,11 @@ const defaults: Required<BookOptions> = {
   data: '_data',
   images: '_static/image',
   chapters: '_src',
+  useToc: true,
+  chapterPattern: '**/*.*html',
+  assetPattern: '**/image/*.*',
+  convertToMarkdown: true,
   resolveLinks: true,
-  renameChapterFiles: true,
-  convertToMarkdown: true
 }
 
 export async function processBook(path: string, options: BookOptions = {}) {
@@ -103,44 +119,37 @@ export async function processBook(path: string, options: BookOptions = {}) {
   }
 
   if (opt.chapters) {
-
-    const links: LinkStatus[] = [];
     const toc = await getToc(book);
-    for (const chapter of toc) {
-      const exportedChapters: string[] = [];
-      // These are deep links to portions of individual chapters; we 
-      // can safely skip them.
-      const chapterFile = chapter.content.split('#')[0];
-      if (exportedChapters.includes(chapterFile)) continue;
+    let chapters = opt.useToc ?
+      toc.map(t => t.content) :
+      (await listContents(book)).filter(f => micromatch.isMatch(f, opt.chapterPattern));
 
-      const chapterData = await getChapter(book, chapterFile);
+    // Remove anchor tags, then de-duplicate the list.
+    chapters = chapters.map(c => c.split('#')[0]);
+    chapters = [...(new Set(chapters)).values()];
+    
+    for (const chapter of chapters) {
+      const chapterData = await getChapter(book, chapter);
       if (chapterData.markup) {
-        const frontmatter: Record<string, unknown> = {
-          title: chapter.navLabel,
-          order: chapter.playOrder,
-        };
-        if (chapterData.chapterHeading) frontmatter.chapterHeading = chapterData.chapterHeading;
-
-        if (opt.resolveLinks) {
-          links.push(...chapterData.links?.map(url => ({ url })) ?? []);
-        }
+        const frontmatter: Record<string, unknown> = {};
+        if (chapterData.title) frontmatter.title = chapterData.title;
+        if (chapterData.order) frontmatter.order = chapterData.order;
+        if (chapterData.headerImage) frontmatter.headerImage = chapterData.headerImage;
 
         const content = chapterData.markdown ?? '';
-        const filename = chapterFile.replace(/\..?html/, '.md');
-        root.dir(opt.chapters).write(filename, matter.stringify({ content }, frontmatter));
-      }
-      if (opt.data && links.length) {
-        root.dir(opt.data).write('links.json', links);
+        const filename = chapter.replace(/\..?html/, '.md');
+        root.dir(opt.chapters).write(filename, matter.stringify(content, frontmatter));
       }
     }
   }
 
   if (opt.images) {
     await copyFiles(book, {
-      matching: '**/image/*.*',
+      matching: opt.assetPattern,
       preserveDates: true,
       rewritePaths: path => path.replace('OEBPS/image/', ''),
       output: root.dir(opt.images).path()
     });
   }
 }
+

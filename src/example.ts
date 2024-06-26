@@ -5,5 +5,8 @@ import { parse as parsePath } from 'path'
 for (const f of jetpack.find({ matching: './input/*.epub' })) {
   console.log(`Processing '${f}'`);
   await processBook(f, { root: `./output/${parsePath(f).name}` })
-    .catch(() => console.log(`Error processing ${f}`));
+    .catch(err => {
+      console.log(`Error processing ${f}`);
+      console.log(err);
+    });
 }

@@ -16,19 +16,27 @@ declare function listContents(input: string | JSZip): Promise<string[]>;
 
 declare function getMeta(input: string | JSZip): Promise<{
     date: string;
-    title: string;
-    language: string;
     identifier: string;
+    title?: string | undefined;
     creator?: string | string[] | undefined;
     contributor?: string[] | undefined;
     publisher?: string | undefined;
     rights?: string | undefined;
-    subject?: string[] | undefined;
+    subject?: string | string[] | undefined;
+    language?: string | string[] | undefined;
     source?: string | undefined;
 }>;
 declare function getRawMeta(input: string | JSZip): Promise<string>;
 declare const metadata: z.ZodObject<{
-    title: z.ZodString;
+    title: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodEffects<z.ZodObject<{
+        text: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        text: string;
+    }, {
+        text: string;
+    }>, string, {
+        text: string;
+    }>]>>;
     creator: z.ZodOptional<z.ZodUnion<[z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodEffects<z.ZodObject<{
         text: z.ZodString;
     }, "strip", z.ZodTypeAny, {
@@ -57,8 +65,24 @@ declare const metadata: z.ZodObject<{
     }>]>, "many">>>;
     publisher: z.ZodOptional<z.ZodString>;
     rights: z.ZodOptional<z.ZodString>;
-    subject: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-    language: z.ZodString;
+    subject: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>>;
+    language: z.ZodOptional<z.ZodUnion<[z.ZodUnion<[z.ZodString, z.ZodEffects<z.ZodObject<{
+        text: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        text: string;
+    }, {
+        text: string;
+    }>, string, {
+        text: string;
+    }>]>, z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodEffects<z.ZodObject<{
+        text: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        text: string;
+    }, {
+        text: string;
+    }>, string, {
+        text: string;
+    }>]>, "many">]>>;
     identifier: z.ZodUnion<[z.ZodString, z.ZodEffects<z.ZodObject<{
         text: z.ZodString;
     }, "strip", z.ZodTypeAny, {
@@ -72,22 +96,23 @@ declare const metadata: z.ZodObject<{
     date: z.ZodString;
 }, "strip", z.ZodTypeAny, {
     date: string;
-    title: string;
-    language: string;
     identifier: string;
+    title?: string | undefined;
     creator?: string | string[] | undefined;
     contributor?: string[] | undefined;
     publisher?: string | undefined;
     rights?: string | undefined;
-    subject?: string[] | undefined;
+    subject?: string | string[] | undefined;
+    language?: string | string[] | undefined;
     source?: string | undefined;
 }, {
     date: string;
-    title: string;
-    language: string;
     identifier: string | {
         text: string;
     };
+    title?: string | {
+        text: string;
+    } | undefined;
     creator?: string | {
         text: string;
     } | (string | {
@@ -98,7 +123,12 @@ declare const metadata: z.ZodObject<{
     })[] | undefined;
     publisher?: string | undefined;
     rights?: string | undefined;
-    subject?: string[] | undefined;
+    subject?: string | string[] | undefined;
+    language?: string | {
+        text: string;
+    } | (string | {
+        text: string;
+    })[] | undefined;
     source?: string | undefined;
 }>;
 type BookMetadata = z.infer<typeof metadata>;
@@ -151,15 +181,16 @@ type BookTocItem = z.infer<typeof navPoint>;
 type ChapterData = {
     [index: string]: unknown;
     title?: string;
-    chapterHeading?: string;
+    order?: number;
+    headerImage?: string;
     markdown?: string;
-    xhtml?: string;
+    markup?: string;
     links?: string[];
 };
 /**
  * Given the `content` key from a TOC chapter entry, return the XHTML text of that chapter.
  */
-declare function getChapter(input: string | JSZip, chapter: string): Promise<ChapterData>;
+declare function getChapter(input: string | JSZip, file: string): Promise<ChapterData>;
 /**
  * Given the `content` key from a TOC chapter entry, return the XHTML text of that chapter.
  */
@@ -176,13 +207,78 @@ interface CopyFileOptions {
  */
 declare function copyFiles(input: string | JSZip, options?: CopyFileOptions): Promise<void>;
 
+/**
+ * Options to control Dancing Queen's book conversion process.
+ */
 interface BookOptions {
+    /**
+     * The root directory the book's files should be exported to.
+     *
+     * @defaultValue `./output`
+     */
     root?: string;
+    /**
+     * The root-relative directory where data files (book metadata, link
+     * status checks, etc) should go.
+     *
+     * If set to `false`, these metadata files will not be generated.
+     *
+     * @defaultValue `_data`
+     */
     data?: false | string;
-    images?: false | string;
-    fonts?: false | string;
+    /**
+     * The root-relative directory where html chapter/section files should
+     * be copied.
+     *
+     * If set to `false`, these files will not be copied over.
+     *
+     * @defaultValue `_src`
+     */
     chapters?: false | string;
-    expandLinks?: boolean;
+    /**
+     * The root-relative directory where image files for the ebook should
+     * be copied.
+     *
+     * If set to `false`, these files will not be copied over.
+     *
+     * @defaultValue `_src/image`
+     */
+    images?: false | string;
+    /**
+     * Convert the chapter/section files to markdown and store their metadata
+     * in the file's frontmatter.
+     *
+     * @defaultValue `true`
+     */
+    convertToMarkdown?: boolean;
+    /**
+     * Attempt to replace shortened `bookapt.com` links with their expanded
+     * equivalents.
+     *
+     * Note: This feature is not yet complete.
+     *
+     * @defaultValue `true`
+     */
+    resolveLinks?: boolean;
+    /**
+     * Process chapter/section files even if they are not linked in the book's TOC file.
+     *
+     * @defaultValue `true`
+     */
+    useToc?: boolean;
+    /**
+     * The glob pattern used to identify chapter files in the book's contents. If `includeUnlinkedChapters`
+     * is set to `false`, this option is ignored.
+     *
+     * @defaultValue `**\/*.*html`
+     */
+    chapterPattern?: string;
+    /**
+     * The glob pattern used to identify image and other media assets in the book's contents.
+     *
+     * @defaultValue `**\/image/*.*`
+     */
+    assetPattern?: string;
 }
 declare function processBook(path: string, options?: BookOptions): Promise<void>;
 
