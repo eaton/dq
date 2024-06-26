@@ -1,5 +1,9 @@
 import TurndownService, { type Options as TurndownOptions } from 'turndown';
-import { tables } from './better-turndown-tables.js';
+import { tables } from './markdown-rules/tables.js';
+import { abaNobrSpans } from './markdown-rules/aba-nobr-spans.js';
+import { abaFigures } from './markdown-rules/aba-figures.js';
+import { abaCodeBlocks } from './markdown-rules/aba-codeblocks.js';
+import { noIndentListItem } from './markdown-rules/list-item.js';
 
 export interface MarkdownOptions extends TurndownService.Options {
   highlightedCodeBlock?: boolean,
@@ -36,163 +40,10 @@ export function toMarkdownParser(options: MarkdownOptions = {}) {
     ...options
   };
 
-  const service = new TurndownService(opt).use([tables]);
+  const service = new TurndownService(opt).use([tables, abaNobrSpans, abaFigures, abaCodeBlocks, noIndentListItem]);
 
   // Strip the page title; we don't want it appearing in the body.
   service.remove('title');
-
-  // List items should get a single space intentation, not four.
-  service.addRule('listItem', {
-    filter: 'li',
-    replacement: (content, node, opt) => {
-      content = content
-      .replace(/^\n+/, '') // remove leading newlines
-      .replace(/\n+$/, '\n') // replace trailing newlines with just a single one
-      .replace(/\n/gm, '\n    ') // indent
-      let prefix = opt.bulletListMarker + ' '
-      const parent = node.parentNode
-      if (parent?.nodeName === 'OL') {
-        const start = parent.getAttribute('start')
-        const index = Array.prototype.indexOf.call(parent.children, node)
-        prefix = (start ? Number(start) + index : index + 1) + '. '
-      }
-      return (
-        prefix + content + (node.nextSibling && !/\n$/.test(content) ? '\n' : '')
-      )
-    }
-  });
-
-  // figure.figFrame
-  //   p.figHolder span img
-  //   figcaption
-  service.addRule('aba-figure-1', {
-    filter: function (node) {
-      const classAttr = node.getAttribute('class')
-      return (
-        (node.nodeName === 'FIGURE') &&
-        (classAttr && classAttr.indexOf('figFrame') !== -1)
-      )
-    },
-    replacement: function (content, node) {
-      const img = node.firstChild?.firstChild?.firstChild;
-      const src = img?.getAttribute && img?.getAttribute('src');
-      const alt = img?.getAttribute && img?.getAttribute('alt');
-      const caption = node.textContent;
-      if (src && caption) {
-        return `![${alt || ''}](${src} "${caption}")\n\n`;
-      } else if (caption && !src) {
-        return `![${alt || ''}](image/missing-image.png "${caption}")\n\n`;
-      } else {
-        return node.outerHTML;
-      }
-    }
-  })
-
-  // figure div.figure 
-  //   div.image img
-  //   p.fig
-  service.addRule('aba-figure-2', {
-    filter: function (node) {
-      const firstChild = node.firstChild;
-      const classAttr = firstChild?.getAttribute && firstChild?.getAttribute('class')
-      return (
-        (node.nodeName === 'FIGURE') &&
-        (firstChild.nodeName === 'DIV') &&
-        (classAttr && classAttr.indexOf('figure') !== -1)
-      )
-    },
-    replacement: function (content, node) {
-      const img = node.firstChild?.firstChild?.firstChild;
-      const src = img?.getAttribute && img?.getAttribute('src');
-      const alt = img?.getAttribute && img?.getAttribute('alt');
-      const caption = node.firstChild.children[1]?.textContent;
-      if (src && caption) {
-        return `![${alt || ''}](${src} "${caption}")`;
-      } else {
-        return node.outerHTML;
-      }
-    }
-  });
-
-  // div.figure
-  //   div.figure img
-  //   div.figure p.FigureCaptionBorder
-  service.addRule('aba-figure-3', {
-    filter: function (node) {
-      const classAttr = node.getAttribute('class')
-      const firstChild = node.children[0];
-      const secondChild = node.children[1];
-      return (
-        (node.nodeName === 'DIV') &&
-        (classAttr && classAttr.indexOf('figure') !== -1) &&
-        (firstChild?.nodeName === 'DIV') && (firstChild?.firstChild?.nodeName === 'IMG') && 
-        (secondChild?.nodeName === 'DIV') && (secondChild?.firstChild?.nodeName === 'P')
-      )
-    },
-    replacement: function (content, node) {
-      const img = node.children[0]?.firstChild;
-      const src = img?.getAttribute && img?.getAttribute('src');
-      const alt = img?.getAttribute && img?.getAttribute('alt');
-      const caption = node.children[1]?.textContent;
-      if (src && caption) {
-        return `![${alt || ''}](${src} "${caption}")`;
-      } else {
-        return node.outerHTML;
-      }
-    }
-  });
-
-  // figure.figFrame
-  //   div.figure img
-  //   figcaption
-  service.addRule('aba-figure-4', {
-    filter: function (node) {
-      const classAttr = node.getAttribute('class')
-      return (
-        (node.nodeName === 'FIGURE') &&
-        (classAttr && classAttr.indexOf('figFrame') !== -1)
-      )
-    },
-    replacement: function (content, node) {
-      const img = node.firstChild?.firstChild;
-      const src = img?.getAttribute && img?.getAttribute('src');
-      const alt = img?.getAttribute && img?.getAttribute('alt');
-      const caption = node.textContent;
-      if (src && caption) {
-        return `![${alt || ''}](${src} "${caption}")\n\n`;
-      } else if (caption && !src) {
-        return `![${alt || ''}](image/missing-image.png "${caption}")\n\n`;
-      } else {
-        return node.outerHTML;
-      }
-    }
-  })
-
-
-  service.addRule('aba-pre-code', {
-    // hahah. get it? precode?
-
-    filter: function (node) {
-      const classAttr = node.getAttribute('class')
-      return (
-        (node.nodeName === 'PRE') &&
-        (classAttr && classAttr.indexOf('Code') !== -1)
-      )
-    },
-    replacement: function (content) {
-      return '    ' + content + '\n';
-    }
-  });
-
-  service.addRule('nobreak spans', {
-    filter: function (node) {
-      return (
-        (node.nodeName === 'SPAN') &&
-        (node.getAttribute('class') === 'NoBreak')
-      )
-    },
-    replacement: (content) => content.trim(),
-  })
 
   service.addRule('cite', {
     filter: 'cite',
