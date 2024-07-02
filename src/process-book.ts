@@ -48,7 +48,7 @@ export interface BookOptions {
    * 
    * If set to `false`, these files will not be copied over.
    *
-   * @defaultValue `_src/image`
+   * @defaultValue `_static`
    */
   images?: false | string,
 
@@ -96,7 +96,7 @@ export interface BookOptions {
 const defaults: Required<BookOptions> = {
   root: './output',
   data: '_data',
-  images: '_static/image',
+  images: '_static',
   chapters: '_src',
   useToc: true,
   chapterPattern: '**/*.*html',
@@ -160,7 +160,7 @@ export async function processBook(path: string, options: BookOptions = {}) {
     await copyFiles(book, {
       matching: opt.assetPattern,
       preserveDates: true,
-      rewritePaths: path => path.replace('OEBPS/image/', ''),
+      rewritePaths: path => path.replace('OEBPS/', ''),
       output: root.dir(opt.images).path()
     });
   }
