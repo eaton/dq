@@ -38,7 +38,7 @@ export async function getChapter(input: string | JSZip, file: string) {
       $('h1').remove();
     }
 
-    const img = $('div.chapterheading img, div.ch_open_img img');
+    const img = $('div.chapterheading img, div.ch_open_img img, body > div > img');
     if (img) {
       output.chapterImage = img?.attr('src') || undefined;
       $(img).remove();
