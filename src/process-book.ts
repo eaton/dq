@@ -9,6 +9,7 @@ import { getChapter } from './get-chapter.js';
 import { copyFiles } from './copy-files.js';
 import { listContents } from './list-contents.js';
 import micromatch from 'micromatch';
+import { getReferences } from './get-references.js';
 
 /**
  * Options to control Dancing Queen's book conversion process.
@@ -109,6 +110,7 @@ export async function processBook(path: string, options: BookOptions = {}) {
   const opt = { ...defaults, ...options };
   const book = await loadBook(path);
   const root = jetpack.dir(opt.root);
+  let references: Record<string, string> = {};
 
   if (opt.data) {
     const meta = await getMeta(book);
@@ -132,14 +134,29 @@ export async function processBook(path: string, options: BookOptions = {}) {
     for (const chapter of chapters) {
       const chapterData = await getChapter(book, chapter);
       if (chapterData.markup) {
+        if (chapterData.title?.trim().toLocaleLowerCase() === 'references') {
+          references = getReferences(chapterData.markup);
+        }
+
         const frontmatter: Record<string, unknown> = {};
         if (chapterData.title) {
           // Pull out the words 'Chapter x.' at the beginning of the title
-          frontmatter.title = chapterData.title.replace(/Chapter \d+\.\s*/, '');
+          const [, chapterNumber, chapterName] = /Chapter (\d+)[.:]\s*([\w\s]+)/.exec(chapterData.title) ?? []
+          if (chapterNumber) {
+            chNum = Number.parseInt(chapterNumber);
+            frontmatter.chapterNumber = chNum;
+          }
+          if (chapterName) {
+            frontmatter.title = chapterName;
+          } else {
+            frontmatter.title = chapterData.title.replace(/Chapter \d+\.\s*/, '');
+          }
         }
         if (chapterData.chapterImage) {
           frontmatter.headerImage = chapterData.chapterImage;
-          frontmatter.chapterNumber = ++chNum;
+          if (frontmatter.chapterNumber === undefined) {
+            frontmatter.chapterNumber = ++chNum;
+          }
         }
 
         // Fill in frontmatter gaps with the TOC data
@@ -152,6 +169,9 @@ export async function processBook(path: string, options: BookOptions = {}) {
         const content = chapterData.markdown ?? '';
         const filename = chapter.replace(/\..?html/, '.md');
         root.dir(opt.chapters).write(filename, matter.stringify(content, frontmatter));
+        if (opt.data && references) {
+          root.dir(opt.data).write('references.json', references);
+        }
       }
     }
   }

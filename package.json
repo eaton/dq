@@ -53,9 +53,8 @@
     "typescript-eslint": "^7.9.0"
   },
   "dependencies": {
-    "@types/cheerio": "^0.22.35",
     "@types/turndown": "^5.0.4",
-    "cheerio": "^1.0.0-rc.12",
+    "cheerio": "^1.0.0",
     "fs-jetpack": "^5.1.0",
     "gray-matter": "^4.0.3",
     "jimp": "^0.22.12",
